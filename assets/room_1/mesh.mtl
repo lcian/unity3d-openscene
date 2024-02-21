@@ -1,0 +1,36 @@
+newmtl Int_Apt_03
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd Int_Apt_03_A.png
+map_Bump Int_Apt_03_N.png
+illum 2
+
+newmtl Int_Apt_01
+Kd 0.8679245 0.8295434 0.8065147
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd Int_Apt_01_A.png
+map_Bump Int_Apt_01_N.png
+illum 2
+
+newmtl Antique
+Kd 0.2641509 0.1613563 0.05856171
+Ks 0.1999999 0.1999999 0.1999999
+illum 2
+
+newmtl BA_Glow_White_01
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+illum 2
+
+newmtl 00121-marketsc
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd 00121-marketsc.png
+illum 2
+
+newmtl 00134-horse
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd 00134-horse.png
+illum 2
+
