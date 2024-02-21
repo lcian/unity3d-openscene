@@ -3,6 +3,7 @@
  * changes:
  * - fix to work with Linux paths
  * - use relative path in .mtl for .png textures
+ * - export one material per material + main texture combination
  */
 
 #if UNITY_EDITOR
@@ -200,9 +201,14 @@ public class OBJExporter : ScriptableWizard
                 for(int j=0; j < mats.Length; j++)
                 {
                     Material m = mats[j];
-                    if (!materialCache.ContainsKey(m.name))
+                    string materialFullName = m.name;
+                    if (m.mainTexture != null)
                     {
-                        materialCache[m.name] = true;
+                        materialFullName += m.mainTexture.name;
+                    }
+                    if (!materialCache.ContainsKey(materialFullName))
+                    {
+                        materialCache[materialFullName] = true;
                         sbMaterials.Append(MaterialToString(m));
                         sbMaterials.AppendLine();
                     }
@@ -260,8 +266,13 @@ public class OBJExporter : ScriptableWizard
             {
                 if(mr != null && j < mr.sharedMaterials.Length)
                 {
-                    string matName = mr.sharedMaterials[j].name;
-                    sb.AppendLine("usemtl " + matName);
+                    Material m = mr.sharedMaterials[j];
+                    string materialFullName = m.name;
+                    if(m.mainTexture != null)
+                    {
+                        materialFullName += m.mainTexture.name;
+                    }
+                    sb.AppendLine("usemtl " + materialFullName);
                 }
                 else
                 {
@@ -356,7 +367,12 @@ public class OBJExporter : ScriptableWizard
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.AppendLine("newmtl " + m.name);
+        string materialFullName = m.name;
+        if (m.mainTexture != null)
+        {
+            materialFullName += m.mainTexture.name;
+        }
+        sb.AppendLine("newmtl " + materialFullName);
 
 
         //add properties
