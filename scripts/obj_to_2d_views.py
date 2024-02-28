@@ -25,7 +25,7 @@ else:
 # TODO: camera positioning
 def obj_to_2d_views(filename, image_size=256, num_views=20):
 
-    mesh = load_objs_as_meshes([filename], load_textures=True, create_texture_atlas=True, device=device)
+    mesh = load_objs_as_meshes([filename], load_textures=True, create_texture_atlas=True, texture_atlas_size=512, device=device)
 
     # We scale normalize and center the target mesh to fit in a sphere of radius 1 
     # centered at (0,0,0). (scale, center) will be used to bring the predicted mesh 
@@ -36,11 +36,11 @@ def obj_to_2d_views(filename, image_size=256, num_views=20):
     center = verts.mean(0)
     scale = max((verts - center).abs().max(0)[0])
     mesh.offset_verts_(-center)
-    mesh.scale_verts_((1.0 / float(scale)))
+    #mesh.scale_verts_((1.0 / float(scale)))
 
     # Get a batch of viewing angles. 
-    elev = torch.linspace(0, 360, num_views)
-    azim = torch.linspace(-180, 180, num_views)
+    elev = torch.zeros(num_views)
+    azim = torch.linspace(0, 360, num_views)
 
     # Place a point light in front of the object.
     #lights = PointLights(device=device, location=[[0.0, 0.0, -3.0]])
@@ -49,7 +49,7 @@ def obj_to_2d_views(filename, image_size=256, num_views=20):
     # viewing angles. All the cameras helper methods support mixed type inputs and 
     # broadcasting. So we can view the camera from the a distance of dist=2.7, and 
     # then specify elevation and azimuth angles for each viewpoint as tensors. 
-    R, T = look_at_view_transform(dist=3.5, elev=elev, azim=azim)
+    R, T = look_at_view_transform(dist=0.1, elev=elev, azim=azim)
     cameras = FoVPerspectiveCameras(device=device, R=R, T=T)
 
     # We arbitrarily choose one particular view that will be used to visualize results
@@ -57,9 +57,10 @@ def obj_to_2d_views(filename, image_size=256, num_views=20):
                                       T=T[None, 1, ...]) 
 
     raster_settings = RasterizationSettings(
-        image_size=image_size, 
+        image_size=(1200, 680), 
         blur_radius=0.0, 
         faces_per_pixel=1, 
+        #max_faces_per_bin = 50000,
     )
 
     # Create a Phong renderer by composing a rasterizer and a shader. The textured 
