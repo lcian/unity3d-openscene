@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 # pyright: reportGeneralTypeIssues=false
+import os
+
+import numpy as np
 import torch
 import torchvision.transforms as transforms
 from pytorch3d.io import load_objs_as_meshes
@@ -21,8 +24,8 @@ else:
     device = torch.device("cpu")
 
 DEFAULT_IMAGE_SIZE = (1200, 680)  # same as Replica
-DEFAULT_TEXTURE_ATLAS_SIZE = 64  # works well for the examples
-DEFAULT_NUM_VIEWS = 16
+DEFAULT_TEXTURE_ATLAS_SIZE = 64  # works well for the examples, requires GPU
+DEFAULT_NUM_VIEWS = 32
 
 
 # from https://pytorch3d.org/tutorials/fit_textured_mesh
@@ -57,7 +60,7 @@ def obj_to_2d_views(
     camera = FoVPerspectiveCameras(device=device, R=R[None, 1, ...], T=T[None, 1, ...])
 
     raster_settings = RasterizationSettings(
-        image_size=(1200, 680),
+        image_size=image_size,
         blur_radius=0.0,
         faces_per_pixel=1,
     )
@@ -80,6 +83,25 @@ def obj_to_2d_views(
     for i, rgb in enumerate(target_rgb):
         img = transform(rgb.permute(2, 0, 1))
         img.save(filename.replace(".obj", "") + f"_view_{i}.png")
+
+    directory = "/".join(filename.split("/")[:-1])
+
+    # save camera intrinsic
+    intrinsic = cameras[0].get_projection_transform().get_matrix()
+    intrinsic = intrinsic[0].cpu().numpy()
+    np.savetxt(
+        os.path.join(directory, "intrinsics.txt"),
+        intrinsic,
+        fmt="%1.18e",
+        delimiter=" ",
+    )
+
+    # save camera poses
+    poses = [camera.get_world_to_view_transform().get_matrix() for camera in cameras]
+    poses = torch.cat(poses)
+    poses.reshape(1, len(poses) * 4, 4)
+    poses = poses[0].cpu().numpy()
+    np.savetxt(os.path.join(directory, "traj.txt"), poses, fmt="%1.18e", delimiter=" ")
 
 
 if __name__ == "__main__":
