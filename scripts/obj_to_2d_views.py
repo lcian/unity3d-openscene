@@ -1,10 +1,7 @@
+#!/usr/bin/env python3
 # pyright: reportGeneralTypeIssues=false
 import torch
 from pytorch3d.io import load_objs_as_meshes
-from pytorch3d.io import IO
-from pytorch3d.ops import sample_points_from_meshes
-from plyfile import PlyData
-from pytorch3d.structures import Pointclouds
 from pytorch3d.renderer import (
     look_at_view_transform,
     FoVPerspectiveCameras, 
@@ -16,37 +13,12 @@ from pytorch3d.renderer import (
     SoftPhongShader,
 )
 import torchvision.transforms as transforms
-import os
 
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
     torch.cuda.set_device(device)
 else:
     device = torch.device("cpu")
-
-
-def obj_to_ply(filename, num_samples=2_000_000, ascii=False, create_meshlab=False):
-    
-    ply_filename = filename.replace(".obj", ".ply")
-
-    mesh = load_objs_as_meshes([filename], load_textures=True, create_texture_atlas=True)
-    points, features = sample_points_from_meshes(mesh, num_samples=num_samples, return_textures=True)
-    pointcloud = Pointclouds(points=points, features=features)
-    IO().save_pointcloud(pointcloud, ply_filename, binary=not ascii)
-
-    if create_meshlab:
-        features = (features * 255).to(torch.uint8)
-        pointcloud = Pointclouds(points=points, features=features)
-        IO().save_pointcloud(pointcloud, ply_filename + ".tmp.ply")
-
-        ply = PlyData.read(ply_filename + ".tmp.ply")
-        verts = ply["vertex"]
-        verts.ply_property("red").val_dtype = 'u1'
-        verts.ply_property("green").val_dtype = 'u1' 
-        verts.ply_property("blue").val_dtype = 'u1'
-        PlyData(ply, text=ascii).write("".join(ply_filename.split(".")[:-1]) + ".meshlab.ply")
-
-        os.remove(ply_filename + ".tmp.ply")
 
 
 # from https://pytorch3d.org/tutorials/fit_textured_mesh
@@ -71,13 +43,13 @@ def obj_to_2d_views(filename, image_size=256, num_views=20):
     azim = torch.linspace(-180, 180, num_views)
 
     # Place a point light in front of the object.
-    lights = PointLights(device=device, location=[[0.0, 0.0, -3.0]])
+    #lights = PointLights(device=device, location=[[0.0, 0.0, -3.0]])
 
     # Initialize an OpenGL perspective camera that represents a batch of different 
     # viewing angles. All the cameras helper methods support mixed type inputs and 
     # broadcasting. So we can view the camera from the a distance of dist=2.7, and 
     # then specify elevation and azimuth angles for each viewpoint as tensors. 
-    R, T = look_at_view_transform(dist=2.7, elev=elev, azim=azim)
+    R, T = look_at_view_transform(dist=3.5, elev=elev, azim=azim)
     cameras = FoVPerspectiveCameras(device=device, R=R, T=T)
 
     # We arbitrarily choose one particular view that will be used to visualize results
@@ -101,7 +73,7 @@ def obj_to_2d_views(filename, image_size=256, num_views=20):
         shader=SoftPhongShader(
             device=device, 
             cameras=camera,
-            lights=lights
+            #lights=lights
         )
     )
 
@@ -111,7 +83,7 @@ def obj_to_2d_views(filename, image_size=256, num_views=20):
     meshes = mesh.extend(num_views)
 
     # Render the cow mesh from each viewing angle
-    target_images = renderer(meshes, cameras=cameras, lights=lights)
+    target_images = renderer(meshes, cameras=cameras)#, lights=lights)
 
     # Our multi-view cow dataset will be represented by these 2 lists of tensors,
     # each of length num_views.
@@ -122,3 +94,13 @@ def obj_to_2d_views(filename, image_size=256, num_views=20):
     for i, rgb in enumerate(target_rgb):
         img = transform(rgb.permute(2, 0, 1))
         img.save(filename.replace(".obj", "") + f"_view_{i}.png")
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description='Generate 2D views from 3D .obj')
+    parser.add_argument('filename', type=str, help='Input file')
+    parser.add_argument('--image_size', type=int, default=256, help='Image size')
+    parser.add_argument('--num_views', type=int, default=20, help='Number of views')
+    args = parser.parse_args()
+    obj_to_2d_views(args.filename, args.image_size, args.num_views)
