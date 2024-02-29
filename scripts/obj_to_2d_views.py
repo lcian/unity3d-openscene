@@ -5,6 +5,7 @@ import os
 import numpy as np
 import torch
 import torchvision.transforms as transforms
+from PIL import Image
 from pytorch3d.io import load_objs_as_meshes
 from pytorch3d.renderer import (
     FoVPerspectiveCameras,
@@ -28,13 +29,25 @@ DEFAULT_TEXTURE_ATLAS_SIZE = 64  # works well for the examples, requires GPU
 DEFAULT_NUM_VIEWS = 32
 
 
-# from https://pytorch3d.org/tutorials/fit_textured_mesh
+# .obj to 2D views in a format equivalent to the one expected by OpenScene for Replica
 def obj_to_2d_views(
     filename,
+    out_dir,
     image_size=DEFAULT_IMAGE_SIZE,
     texture_atlas_size=DEFAULT_TEXTURE_ATLAS_SIZE,
     num_views=DEFAULT_NUM_VIEWS,
 ):
+
+    mesh_name = filename.split("/")[-2]
+    out_dir = os.path.abspath(out_dir)
+    root_dir = os.path.join(out_dir, mesh_name)
+    color_dir = os.path.join(root_dir, "color")
+    depth_dir = os.path.join(root_dir, "depth")
+    pose_dir = os.path.join(root_dir, "pose")
+    os.makedirs(root_dir, exist_ok=True)
+    os.makedirs(color_dir, exist_ok=True)
+    os.makedirs(depth_dir, exist_ok=True)
+    os.makedirs(pose_dir, exist_ok=True)
 
     mesh = load_objs_as_meshes(
         [filename],
@@ -75,33 +88,43 @@ def obj_to_2d_views(
 
     # render
     meshes = mesh.extend(num_views)
-    target_images = renderer(meshes, cameras=cameras)
-    target_rgb = [target_images[i, ..., :3] for i in range(num_views)]
+    rendering = renderer(meshes, cameras=cameras)
+    rendering_rgb = [rendering[i, ..., :3] for i in range(num_views)]
+    rendering_depth = [rendering[i, ..., 3] for i in range(num_views)]
 
-    # save
+    # color views
     transform = transforms.ToPILImage()
-    for i, rgb in enumerate(target_rgb):
+    for i, rgb in enumerate(rendering_rgb):
         img = transform(rgb.permute(2, 0, 1))
-        img.save(filename.replace(".obj", "") + f"_view_{i}.png")
+        img.save(os.path.join(color_dir, f"{i}.jpg"))
 
-    directory = "/".join(filename.split("/")[:-1])
+    # depth views
+    for i, depth in enumerate(rendering_depth):
+        depth *= 255
+        img = Image.fromarray(depth.cpu().numpy().astype("uint8")).convert("L")
+        img.save(os.path.join(depth_dir, f"{i}.png"))
 
-    # save camera intrinsic
+    # camera intrinsic (all same)
     intrinsic = cameras[0].get_projection_transform().get_matrix()
     intrinsic = intrinsic[0].cpu().numpy()
     np.savetxt(
-        os.path.join(directory, "intrinsics.txt"),
+        os.path.join(out_dir, "intrinsics.txt"),
         intrinsic,
         fmt="%1.18e",
         delimiter=" ",
     )
 
-    # save camera poses
+    # camera poses
     poses = [camera.get_world_to_view_transform().get_matrix() for camera in cameras]
     poses = torch.cat(poses)
     poses.reshape(1, len(poses) * 4, 4)
-    poses = poses[0].cpu().numpy()
-    np.savetxt(os.path.join(directory, "traj.txt"), poses, fmt="%1.18e", delimiter=" ")
+    for i, pose in enumerate(poses):
+        np.savetxt(
+            os.path.join(pose_dir, f"{i}.txt"),
+            pose.cpu().numpy(),
+            fmt="%1.18e",
+            delimiter=" ",
+        )
 
 
 if __name__ == "__main__":
@@ -109,6 +132,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Generate 2D views from 3D .obj")
     parser.add_argument("filename", type=str, help="Input file")
+    parser.add_argument("out_dir", type=str, help="Output directory")
     parser.add_argument(
         "--views_w", type=int, default=DEFAULT_IMAGE_SIZE[0], help="View width"
     )
@@ -127,6 +151,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     obj_to_2d_views(
         args.filename,
+        args.out_dir,
         (args.views_w, args.views_h),
         args.texture_atlas_size,
         args.num_views,
