@@ -61,10 +61,9 @@ if __name__ == "__main__":
         preprocess_3d.obj_to_pth(scene_in_dir, three_d_out_dir, args.num_samples)
 
         scene_out_dir = os.path.join(two_d_out_dir, scene_dir)
-        os.makedirs(scene_out_dir, exist_ok=True)
         preprocess_2d.obj_to_views(
             scene_in_dir,
-            scene_out_dir,
+            two_d_out_dir,
             (args.views_w, args.views_h),
             args.texture_atlas_size,
             args.num_views,
