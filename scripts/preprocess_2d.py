@@ -9,13 +9,12 @@ from PIL import Image
 from pytorch3d.io import load_objs_as_meshes
 from pytorch3d.renderer import (
     FoVPerspectiveCameras,
-    look_at_view_transform,
     MeshRasterizer,
     MeshRenderer,
     PointLights,
     RasterizationSettings,
     SoftPhongShader,
-    SoftPhongShader,
+    look_at_view_transform,
 )
 
 if torch.cuda.is_available():
@@ -30,15 +29,16 @@ DEFAULT_NUM_VIEWS = 32
 
 
 # .obj to 2D views in a format equivalent to the one expected by OpenScene for Replica
-def obj_to_2d_views(
-    filename,
+def obj_to_views(
+    in_dir,
     out_dir,
     image_size=DEFAULT_IMAGE_SIZE,
     texture_atlas_size=DEFAULT_TEXTURE_ATLAS_SIZE,
     num_views=DEFAULT_NUM_VIEWS,
 ):
 
-    mesh_name = filename.split("/")[-2]
+    in_file = os.path.join(in_dir, "mesh.obj")
+    mesh_name = in_dir.split("/")[-1]
     out_dir = os.path.abspath(out_dir)
     root_dir = os.path.join(out_dir, mesh_name)
     color_dir = os.path.join(root_dir, "color")
@@ -50,7 +50,7 @@ def obj_to_2d_views(
     os.makedirs(pose_dir, exist_ok=True)
 
     mesh = load_objs_as_meshes(
-        [filename],
+        [in_file],
         load_textures=True,
         create_texture_atlas=True,
         texture_atlas_size=texture_atlas_size,
@@ -130,8 +130,8 @@ def obj_to_2d_views(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Generate 2D views from 3D .obj")
-    parser.add_argument("filename", type=str, help="Input file")
+    parser = argparse.ArgumentParser(description="Generate 2D views from .obj mesh")
+    parser.add_argument("in_dir", type=str, help="Input directory")
     parser.add_argument("out_dir", type=str, help="Output directory")
     parser.add_argument(
         "--views_w", type=int, default=DEFAULT_IMAGE_SIZE[0], help="View width"
@@ -149,8 +149,8 @@ if __name__ == "__main__":
         "--num_views", type=int, default=DEFAULT_NUM_VIEWS, help="Number of views"
     )
     args = parser.parse_args()
-    obj_to_2d_views(
-        args.filename,
+    obj_to_views(
+        args.in_dir,
         args.out_dir,
         (args.views_w, args.views_h),
         args.texture_atlas_size,
