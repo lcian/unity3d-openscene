@@ -11,6 +11,7 @@ from pytorch3d.renderer import (
     FoVPerspectiveCameras,
     MeshRasterizer,
     MeshRenderer,
+    MeshRendererWithFragments,
     PointLights,
     RasterizationSettings,
     SoftPhongShader,
@@ -78,7 +79,7 @@ def obj_to_views(
         faces_per_pixel=1,
     )
 
-    renderer = MeshRenderer(
+    renderer = MeshRendererWithFragments(
         rasterizer=MeshRasterizer(cameras=camera, raster_settings=raster_settings),
         shader=SoftPhongShader(
             device=device,
@@ -88,9 +89,9 @@ def obj_to_views(
 
     # render
     meshes = mesh.extend(num_views)
-    rendering = renderer(meshes, cameras=cameras)
+    rendering, fragments = renderer(meshes, cameras=cameras)
     rendering_rgb = [rendering[i, ..., :3] for i in range(num_views)]
-    rendering_depth = [rendering[i, ..., 3] for i in range(num_views)]
+    zbufs = [fragments.zbuf[i] for i in range(num_views)]
 
     # color views
     transform = transforms.ToPILImage()
@@ -98,10 +99,13 @@ def obj_to_views(
         img = transform(rgb.permute(2, 0, 1))
         img.save(os.path.join(color_dir, f"{i}.jpg"))
 
-    # depth views
-    for i, depth in enumerate(rendering_depth):
-        depth *= 255
-        img = Image.fromarray(depth.cpu().numpy().astype("uint8")).convert("L")
+    # depth views for i, depth in enumerate(zbufs):
+    for i, depth in enumerate(zbufs):
+        depth = depth.squeeze()
+        depth = (depth - depth.min()) / (depth.max() - depth.min())
+        depth = depth * 255
+        depth = depth.cpu().numpy().astype(np.uint8)
+        img = Image.fromarray(depth, "L")
         img.save(os.path.join(depth_dir, f"{i}.png"))
 
     # camera intrinsic (all same)
