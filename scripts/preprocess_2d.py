@@ -3,6 +3,7 @@
 import os
 
 from tqdm import tqdm
+from imageio import imwrite
 import numpy as np
 import torch
 import torchvision.transforms as transforms
@@ -33,6 +34,7 @@ BATCH_SIZE = 20
 
 FOCAL_LENGTH = 2.0
 
+
 # .obj to 2D views in a format equivalent to the one expected by OpenScene for Replica
 def obj_to_views(
     in_dir,
@@ -44,7 +46,7 @@ def obj_to_views(
 
     assert num_views % BATCH_SIZE == 0
 
-    image_size = (image_size[1], image_size[0]) # :)
+    image_size = (image_size[1], image_size[0])  # :)
 
     in_file = os.path.join(in_dir, "mesh.obj")
     mesh_name = in_dir.split("/")[-1]
@@ -74,15 +76,22 @@ def obj_to_views(
     # generate viewing angles and cameras
     elev = torch.zeros(num_views)
     azim = torch.linspace(0, 360, num_views)
-    
+
     for batch in tqdm(range(num_views // BATCH_SIZE)):
         batch_i = batch * BATCH_SIZE
         batch_j = (batch + 1) * BATCH_SIZE
-        R, T = look_at_view_transform(dist=0.1, elev=elev[batch_i:batch_j], azim=azim[batch_i:batch_j])
+        R, T = look_at_view_transform(
+            dist=0.1, elev=elev[batch_i:batch_j], azim=azim[batch_i:batch_j]
+        )
         cameras = PerspectiveCameras(device=device, R=R, T=T, focal_length=FOCAL_LENGTH)
 
         # arbitrarily choose one particular view to be used for rasterizer and shader
-        camera = PerspectiveCameras(device=device, R=R[None, 1, ...], T=T[None, 1, ...], focal_length=FOCAL_LENGTH)
+        camera = PerspectiveCameras(
+            device=device,
+            R=R[None, 1, ...],
+            T=T[None, 1, ...],
+            focal_length=FOCAL_LENGTH,
+        )
 
         raster_settings = RasterizationSettings(
             image_size=image_size,
@@ -114,10 +123,9 @@ def obj_to_views(
         for i, depth in enumerate(zbufs):
             depth = depth.squeeze()
             depth = (depth - depth.min()) / (depth.max() - depth.min())
-            depth = depth * 255
-            depth = depth.cpu().numpy().astype(np.uint8)
-            img = Image.fromarray(depth, "L")
-            img.save(os.path.join(depth_dir, f"{(batch * BATCH_SIZE) + i}.png"))
+            depth = depth * 65535
+            depth = depth.cpu().numpy().astype(np.uint16)
+            imwrite(os.path.join(depth_dir, f"{(batch * BATCH_SIZE) + i}.png"), depth)
 
         # camera intrinsic (all same)
         intrinsic = torch.eye(4)
@@ -130,10 +138,13 @@ def obj_to_views(
             intrinsic.cpu().numpy(),
             fmt="%1.18e",
             delimiter=" ",
-        ) 
+        )
 
         # camera poses
-        poses = [torch.linalg.inv(camera.get_world_to_view_transform().get_matrix()) for camera in cameras]
+        poses = [
+            torch.linalg.inv(camera.get_world_to_view_transform().get_matrix())
+            for camera in cameras
+        ]
         poses = torch.cat(poses)
         poses.reshape(1, len(poses) * 4, 4)
         for i, pose in enumerate(poses):
