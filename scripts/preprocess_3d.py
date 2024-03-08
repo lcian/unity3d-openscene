@@ -27,6 +27,12 @@ def obj_to_pth(in_dir, out_dir, num_samples=DEFAULT_NUM_SAMPLES):
     tmp_out_file = os.path.join(out_dir, mesh_name + ".tmp.ply")
 
     mesh = load_objs_as_meshes([in_file], load_textures=True, create_texture_atlas=True)
+
+    # center the mesh
+    verts = mesh.verts_packed()
+    center = verts.mean(0)
+    mesh.offset_verts_(-center)
+
     points, features = sample_points_from_meshes(
         mesh, num_samples=num_samples, return_textures=True
     )
