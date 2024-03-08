@@ -1,0 +1,56 @@
+newmtl Int_Apt_03Int_Apt_03_A
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd Int_Apt_03_A.png
+map_Bump Int_Apt_03_N.png
+illum 2
+
+newmtl Int_Apt_01Int_Apt_01_A
+Kd 0.8679245 0.8295434 0.8065147
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd Int_Apt_01_A.png
+map_Bump Int_Apt_01_N.png
+illum 2
+
+newmtl Antique
+Kd 0.2641509 0.1613563 0.05856171
+Ks 0.1999999 0.1999999 0.1999999
+illum 2
+
+newmtl BA_Glow_White_01
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+illum 2
+
+newmtl Universal Render Pipeline/Lit00226-ceiling
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd 00226-ceiling.png
+illum 2
+
+newmtl Universal Render Pipeline/Lit00245-adoratio
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd 00245-adoratio.png
+illum 2
+
+newmtl Plastic_03
+Kd 0.990566 0.990566 0.990566
+Ks 0.1999999 0.1999999 0.1999999
+map_Bump Plastic_N.png
+illum 2
+
+newmtl Leather_01Leather_A
+Kd 0.3113207 0.1389659 0.01909043
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd Leather_A.png
+map_Bump Leather_N.png
+illum 2
+
+newmtl Rustic WoodRustic Wood
+Kd 0.8113207 0.678592 0.5549127
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd Rustic Wood.png
+map_Bump Rustic Wood - Normal.png
+illum 2
+
