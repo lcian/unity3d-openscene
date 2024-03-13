@@ -2,6 +2,7 @@
 # pyright: reportGeneralTypeIssues=false
 import os
 
+from pytorch3d.utils.camera_conversions import opencv_from_cameras_projection
 from tqdm import tqdm
 from imageio import imwrite
 import numpy as np
@@ -83,6 +84,7 @@ def obj_to_views(
         R, T = look_at_view_transform(
             dist=0.1, elev=elev[batch_i:batch_j], azim=azim[batch_i:batch_j]
         )
+
         cameras = PerspectiveCameras(device=device, R=R, T=T, focal_length=FOCAL_LENGTH)
 
         # arbitrarily choose one particular view to be used for rasterizer and shader
@@ -128,11 +130,9 @@ def obj_to_views(
             imwrite(os.path.join(depth_dir, f"{(batch * BATCH_SIZE) + i}.png"), depth)
 
         # camera intrinsic (all same)
-        intrinsic = torch.eye(4)
-        intrinsic[0][0] = FOCAL_LENGTH * 1000
-        intrinsic[1][1] = FOCAL_LENGTH * 1000
-        intrinsic[0][2] = image_size[1] / 2
-        intrinsic[1][2] = image_size[0] / 2
+        RR, TT, KK = opencv_from_cameras_projection(camera, torch.tensor([image_size]))
+        intrinsic = torch.eye(4).float()
+        intrinsic[:3, :3] = KK
         np.savetxt(
             os.path.join(out_dir, "intrinsics.txt"),
             intrinsic.cpu().numpy(),
@@ -140,11 +140,16 @@ def obj_to_views(
             delimiter=" ",
         )
 
-        # camera poses
-        poses = [
-            torch.linalg.inv(camera.get_world_to_view_transform().get_matrix())
-            for camera in cameras
-        ]
+        poses = []
+        for camera in cameras:
+            RR, TT, KK = opencv_from_cameras_projection(
+                camera, torch.tensor([image_size])
+            )
+            extrinsic = torch.eye(4)
+            extrinsic[:3, :3] = RR[0]
+            extrinsic[:3, 3:] = -RR[0].T @ TT[0, :, None]
+            poses.append(extrinsic.unsqueeze(dim=0))
+
         poses = torch.cat(poses)
         poses.reshape(1, len(poses) * 4, 4)
         for i, pose in enumerate(poses):
