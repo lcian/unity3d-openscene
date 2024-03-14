@@ -76,8 +76,8 @@ def obj_to_views(
     mesh.offset_verts_(-center)
 
     # generate viewing angles and cameras
-    elev_amplitude = 20 
-    elev_frequency = 0.025
+    elev_amplitude = 5
+    elev_frequency = 0.05
     elev = elev_amplitude * torch.sin(elev_frequency * torch.linspace(0, 2 * num_views * math.pi, num_views))
     azim = torch.linspace(0, 720, num_views)
 
