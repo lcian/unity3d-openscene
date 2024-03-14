@@ -2,6 +2,7 @@
 # pyright: reportGeneralTypeIssues=false
 import os
 
+import math
 from pytorch3d.utils.camera_conversions import opencv_from_cameras_projection
 from tqdm import tqdm
 from imageio import imwrite
@@ -75,8 +76,10 @@ def obj_to_views(
     mesh.offset_verts_(-center)
 
     # generate viewing angles and cameras
-    elev = torch.zeros(num_views)
-    azim = torch.linspace(0, 360, num_views)
+    elev_amplitude = 20 
+    elev_frequency = 0.025
+    elev = elev_amplitude * torch.sin(elev_frequency * torch.linspace(0, 2 * num_views * math.pi, num_views))
+    azim = torch.linspace(0, 720, num_views)
 
     for batch in tqdm(range(num_views // BATCH_SIZE)):
         batch_i = batch * BATCH_SIZE
