@@ -1,0 +1,57 @@
+newmtl Int_Apt_01Int_Apt_01_A
+Kd 0.8679245 0.8295434 0.8065147
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd Int_Apt_01_A.png
+map_Bump Int_Apt_01_N.png
+illum 2
+
+newmtl BA_Glow_White_01
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+illum 2
+
+newmtl Int_Apt_03Int_Apt_03_A
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd Int_Apt_03_A.png
+map_Bump Int_Apt_03_N.png
+illum 2
+
+newmtl Antique
+Kd 0.2641509 0.1613563 0.05856171
+Ks 0.1999999 0.1999999 0.1999999
+illum 2
+
+newmtl Universal Render Pipeline/Lit00221-oratory
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd 00221-oratory.png
+illum 2
+
+newmtl Universal Render Pipeline/Lit00225-virtues
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd 00225-virtues.png
+illum 2
+
+newmtl Adler Dark WoodAdlerWood_01_A
+Kd 0.2924528 0.1252409 0.07311318
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd AdlerWood_01_A.png
+map_Bump AdlerWood_01_N.png
+illum 2
+
+newmtl White WoodWhite Wood
+Kd 1 1 1
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd White Wood.png
+map_Bump White Wood_normal.png
+illum 2
+
+newmtl Leather_01Leather_A
+Kd 0.3113207 0.1389659 0.01909043
+Ks 0.1999999 0.1999999 0.1999999
+map_Kd Leather_A.png
+map_Bump Leather_N.png
+illum 2
+
